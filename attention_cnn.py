@@ -10,7 +10,7 @@ class AttentionCNN(object):
         self.attention_dim = 100
         self.use_attention = True
 
-        self.x = tf.placeholder(tf.int32, [None, doucument_max_len], name="x")
+        self.x = tf.placeholder(tf.int32, [None, document_max_len], name="x")
         self.y = tf.placeholder(tf.int32, [None], name="y")
         self.is_training = tf.placeholder(tf.bool, [], name="is_training")
         self.global_step = tf.Variable(0, trainable=False)
