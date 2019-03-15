@@ -1,0 +1,117 @@
+import tensorflow as tf
+
+
+class AttentionCNN(object):
+    def __init__(self, vocabulary_size, document_max_len, num_class):
+        self.embedding_size = 128
+        self.learning_rate = 1e-3        
+        self.filter_sizes = [3, 4, 5]
+        self.num_filters = 100
+        self.attention_dim = 100
+        self.use_attention = True
+        self.l2_reg_lambda=0.0
+
+        self.x = tf.placeholder(tf.float32, [None, document_max_len, self.embedding_size], name="x")
+        self.y = tf.placeholder(tf.float32, [None, num_class], name="y")
+        self.keep_prob = tf.placeholder(tf.float32, name="keep_prob")
+        self.global_step = tf.Variable(0, trainable=False)
+        self.document_max_len = document_max_len
+
+        l2_loss = tf.constant(0.0)
+
+        if self.use_attention:
+
+            self.attention_hidden_dim =self.attention_dim
+            self.attention_W = tf.Variable(
+                tf.random_uniform([self.embedding_size, self.attention_hidden_dim], 0.0, 1.0),
+                name="attention_W")
+            self.attention_U = tf.Variable(
+                tf.random_uniform([self.embedding_size, self.attention_hidden_dim], 0.0, 1.0),
+                name="attention_U")
+            self.attention_V = tf.Variable(tf.random_uniform([self.attention_hidden_dim, 1], 0.0, 1.0),
+                                           name="attention_V")
+            self.output_att = list()
+            with tf.name_scope("attention"):
+                input_att = tf.split(self.x, self.document_max_len, axis=1)
+                for index, x_i in enumerate(input_att):
+                    x_i = tf.reshape(x_i, [-1, self.embedding_size])
+                    c_i = self.attention(x_i, input_att, index)
+                    inp = tf.concat([x_i, c_i], axis=1)
+                    self.output_att.append(inp)
+
+                input_conv = tf.reshape(tf.concat(self.output_att, axis=1),
+                                        [-1, self.document_max_len, self.embedding_size*2],
+                                        name="input_convolution")
+            self.input_x = tf.expand_dims(input_conv, -1)
+        else:
+            self.input_x = tf.expand_dims(self.x, -1)
+
+        pooled_outputs = []
+        for filter_size in self.filter_sizes:
+            conv = tf.layers.conv2d(
+                self.input_x,
+                filters=self.num_filters,
+                kernel_size=[filter_size, self.embedding_size],
+                strides=(1, 1),
+                padding="VALID",
+                activation=tf.nn.relu)
+            pool = tf.layers.max_pooling2d(
+                conv,
+                pool_size=[self.document_max_len - filter_size + 1, 1],
+                strides=(1, 1),
+                padding="VALID")
+            pooled_outputs.append(pool)
+
+        num_filters_total = self.num_filters * len(self.filter_sizes)
+        h_pool = tf.concat(pooled_outputs, 3)
+        h_pool_flat = tf.reshape(h_pool, [-1, self.num_filters * len(self.filter_sizes)])
+
+        with tf.name_scope("dropout"):
+            self.h_drop = tf.nn.dropout(h_pool_flat, self.keep_prob)
+
+        with tf.name_scope("output"):
+            W = tf.get_variable(
+                "W",
+                shape=[num_filters_total, num_class],
+                initializer=tf.contrib.layers.xavier_initializer())
+            b = tf.Variable(tf.constant(0.1, shape=[num_class]), name="b")
+            l2_loss += tf.nn.l2_loss(W)
+            l2_loss += tf.nn.l2_loss(b)
+            self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name="scores")
+            self.predictions = tf.argmax(self.scores, 1, name="predictions")
+            self.probabilities = tf.nn.sigmoid(self.scores, name="probabilities")
+
+        with tf.name_scope("loss"):
+            losses = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.scores, labels=self.y)
+            self.loss = tf.reduce_mean(losses) + self.l2_reg_lambda * l2_loss
+            self.op = tf.train.AdamOptimizer(self.learning_rate)
+            self.grads_and_vars = self.op.compute_gradients(self.loss)
+            self.optimizer =self.op.apply_gradients(
+            self.grads_and_vars, global_step=self.global_step)
+
+        with tf.name_scope("accuracy"):
+            correct_predictions = tf.equal(self.predictions, tf.argmax(self.y, 1))
+            self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
+
+    def attention(self, x_i, x, index):
+        e_i = []
+        c_i = []
+
+        for output in x:
+            output = tf.reshape(output, [-1, self.embedding_size])
+            atten_hidden = tf.tanh(tf.add(tf.matmul(x_i, self.attention_W), tf.matmul(output, self.attention_U)))
+            e_i_j = tf.matmul(atten_hidden, self.attention_V)
+            e_i.append(e_i_j)
+        e_i = tf.concat(e_i, axis=1)
+        alpha_i = tf.nn.softmax(e_i)
+        alpha_i = tf.split(alpha_i,self.document_max_len, 1)
+        for j, (alpha_i_j, output) in enumerate(zip(alpha_i, x)):
+            if j == index:
+                continue
+            else:
+                output = tf.reshape(output, [-1, self.embedding_size])
+                c_i_j = tf.multiply(alpha_i_j, output)
+                c_i.append(c_i_j)
+        c_i = tf.reshape(tf.concat(c_i, axis=1), [-1,self.document_max_len-1, self.embedding_size])
+        c_i = tf.reduce_sum(c_i, 1)
+        return c_i
