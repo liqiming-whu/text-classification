@@ -16,7 +16,7 @@ if not os.path.exists("dbpedia_csv"):
 NUM_CLASS = 14
 BATCH_SIZE = 64
 NUM_EPOCHS = 10
-WORD_MAX_LEN = 100
+WORD_MAX_LEN = 25
 
 print("Building dataset...")
 
