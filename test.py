@@ -9,7 +9,7 @@ parser.add_argument("--model", type=str, default="attention_cnn",
 args = parser.parse_args()
 
 BATCH_SIZE = 128
-WORD_MAX_LEN = 100
+WORD_MAX_LEN = 25
 
 word_dict = build_word_dict()
 test_x, test_y = build_word_dataset("test", word_dict, WORD_MAX_LEN)
