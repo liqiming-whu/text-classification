@@ -3,7 +3,7 @@ import tensorflow as tf
 
 class AttentionCNN(object):
     def __init__(self, vocabulary_size, document_max_len, num_class, use_attention=True):
-        self.embedding_size = 64
+        self.embedding_size = 128
         self.learning_rate = 1e-3
         self.filter_sizes = [3, 4, 5]
         self.num_filters = 100
