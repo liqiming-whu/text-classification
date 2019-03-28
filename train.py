@@ -19,7 +19,7 @@ BATCH_SIZE = 64
 NUM_EPOCHS = 10
 WORD_MAX_LEN = 25
 EMBEDDING_SIZE = 100
-GLOVE = "data/glove.6B.100d.txt"
+# GLOVE = "data/glove.6B.100d.txt"
 
 print("Building dataset...")
 
@@ -40,7 +40,7 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver(tf.global_variables())
 
-    if GLOVE:
+    '''if GLOVE:
         initW = np.random.uniform(-1.0, 1.0, (vocabulary_size, EMBEDDING_SIZE))
         glove_dic = {}
         mean = np.zeros(EMBEDDING_SIZE)
@@ -64,7 +64,7 @@ with tf.Session() as sess:
                 initW[word_dict[word_u]] = np.random.normal(mean, 0.1, size=EMBEDDING_SIZE)
 
         sess.run(model.W.assign(initW))
-        print('GloVe loaded!')
+        print('GloVe loaded!')'''
 
     train_batches = batch_iter(train_x, train_y, BATCH_SIZE, NUM_EPOCHS)
     num_batches_per_epoch = (len(train_x) - 1) // BATCH_SIZE + 1
