@@ -6,10 +6,10 @@ class AttentionCNN(object):
     def __init__(self, vocabulary_size, sequence_length, num_class, use_attention_input=True, use_attention_conv=True):
         self.embedding_size = 100
         self.learning_rate = 1e-3
-        self.filter_sizes = [3, 4, 5]
+        self.filter_sizes =[3, 4, 5]
         self.num_filters = 100
         self.atten_size = 50
-        self.l2_reg_lambda = 0.0
+        self.l2_reg_lambda = 0
 
         self.x = tf.placeholder(tf.int32, [None, sequence_length], name="x")
         self.y = tf.placeholder(tf.int32, [None], name="y")
@@ -48,22 +48,21 @@ class AttentionCNN(object):
                 wide_h = tf.nn.relu(tf.nn.bias_add(conv, b), name="RelU")
 
                 if use_attention_conv:
-                    h_i = []
-                    atten_input = tf.reshape(wide_h, [-1, sequence_length + filter_size - 1, self.num_filters])
+                    atten_input = tf.reshape(wide_h,
+                    [-1, sequence_length + filter_size - 1, self.num_filters])
                     atten_out, alphas = self.attention(atten_input, self.atten_size)
-                    wide_h_atten = tf.reshape(atten_out, [-1, sequence_length+filter_size-1, 1, self.num_filters])
-                    for i in range(sequence_length):
-                        h_i.append(tf.reduce_sum(wide_h_atten[:, i:i+filter_size, :, :], axis=1, keep_dims=True))
+                    wide_h_atten = tf.reshape(atten_out,
+                    [-1, sequence_length+filter_size-1, 1, self.num_filters])
 
-                    h = tf.concat(h_i, axis=1, name="h")
                 else:
-                    h = tf.nn.avg_pool(
-                        wide_h,
-                        ksize=[1, filter_size, 1, 1],
-                        strides=[1, 1, 1, 1],
-                        padding="VALID",
-                        name="h"
-                    )
+                    wide_h_atten = wide_h
+                    
+                h = tf.nn.avg_pool(
+                    wide_h_atten,
+                    ksize=[1, filter_size, 1, 1],
+                    strides=[1, 1, 1, 1],
+                    padding="VALID",
+                    name="h")
 
                 pool = tf.nn.avg_pool(
                     h,
@@ -111,7 +110,8 @@ class AttentionCNN(object):
         vu = tf.matmul(v, tf.reshape(u_omega, [-1, 1]))
         exps = tf.reshape(tf.exp(vu), [-1, max_time])
         alphas = exps / tf.reshape(tf.reduce_sum(exps, 1), [-1, 1])
-        atten_outs = atten_inputs * tf.reshape(alphas, [-1, max_time, 1])
+        atten_outs = max_time *(
+                atten_inputs * tf.reshape(alphas, [-1, max_time, 1]))
         return atten_outs, alphas
 
     def pad_wideconv(self, x, filter_size):

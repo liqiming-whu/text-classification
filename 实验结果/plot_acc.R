@@ -1,0 +1,20 @@
+library(Cairo)
+
+data1<-read.table("D:\\config\\base_a.txt",header=T)
+data2<-read.table("D:\\config\\att1_a.txt",header=T)
+data3<-read.table("D:\\config\\att2_a.txt",header=T)
+data4<-read.table("D:\\config\\att3_a.txt",header=T)
+x=t(data1[1])
+y1=t(data1[2])
+y2=t(data2[1])
+y3=t(data3[1])
+y4=t(data4[1])
+
+CairoPNG(file="D:\\config\\acc.png",units="in",bg="white",width=5.5,height=5,dpi=300)
+
+plot(x,y4,type = "o",xlab = "迭代次数",ylab = "准确率",col="green",pch=c(15),family='STXihei')
+lines(x,y2,type = "o",col="yellow",pch=c(16))
+lines(x,y3,type = "o",col="blue",pch=c(17))
+lines(x,y1,type = "o",col="red",pch=c(18))
+legend("bottomright",c("Base_CNN","Att_CNN1","Att_CNN2","Att_CNN3"),col=c("red","yellow","blue","green"),pch=c(18,16,17,15))
+dev.off()

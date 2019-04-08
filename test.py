@@ -4,8 +4,8 @@ from data_utils import *
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, default="attention_cnn",
-                    help="base_cnn | attention_cnn")
+parser.add_argument("--model", type=str, default="att_cnn3",
+                    help="base_cnn | att_cnn1 | att_cnn2 | att_cnn3")
 args = parser.parse_args()
 
 BATCH_SIZE = 128

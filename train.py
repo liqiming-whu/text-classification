@@ -1,14 +1,17 @@
 import sys
+import time
 import argparse
 import tensorflow as tf
 from data_utils import *
 from sklearn.model_selection import train_test_split
 from attention_cnn import AttentionCNN
-
+from base_cnn import BaseCNN
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, default="attention_cnn", help="base_cnn | attention_cnn")
+parser.add_argument("--model", type=str, default="att_cnn3", help="base_cnn | att_cnn1 | att_cnn2 | att_cnn3")
 args = parser.parse_args()
+
+start = time.clock()
 
 if not os.path.exists("dbpedia_csv"):
     print("Downloading dbpedia dataset...")
@@ -31,9 +34,13 @@ train_x, valid_x, train_y, valid_y = train_test_split(x, y, test_size=0.15)
 
 with tf.Session() as sess:
     if args.model == "base_cnn":
-        model = AttentionCNN(vocabulary_size, WORD_MAX_LEN, NUM_CLASS, False)
-    elif args.model == "attention_cnn":
-        model = AttentionCNN(vocabulary_size, WORD_MAX_LEN, NUM_CLASS, True)
+        model = BaseCNN(vocabulary_size, WORD_MAX_LEN, NUM_CLASS)
+    elif args.model == "att_cnn1":
+        model = AttentionCNN(vocabulary_size, WORD_MAX_LEN, NUM_CLASS, True, False)
+    elif args.model == "att_cnn2":
+        model = AttentionCNN(vocabulary_size, WORD_MAX_LEN, NUM_CLASS, False, True )
+    elif args.model == "att_cnn3":
+        model = AttentionCNN(vocabulary_size, WORD_MAX_LEN, NUM_CLASS, True, True )
     else:
         raise NotImplementedError()
 
@@ -54,12 +61,12 @@ with tf.Session() as sess:
                 mean = mean + word_vec
                 count = count + 1
             mean = mean / count
-        
+
         for key in word_dict:
             word_u = key
             if word_u in glove_dic:
                 initW[word_dict[word_u]] = glove[word_u]
-            
+
             else:
                 initW[word_dict[word_u]] = np.random.normal(mean, 0.1, size=EMBEDDING_SIZE)
 
@@ -81,6 +88,10 @@ with tf.Session() as sess:
 
         if step % 100 == 0:
             print("step {0}: loss = {1}".format(step, loss))
+
+        if step % 500 == 0:
+            run_time = time.clock()
+            print("%f CPU seconds"%(run_time-start))
 
         if step % 2000 == 0:
             valid_batches = batch_iter(valid_x, valid_y, BATCH_SIZE, 1)
@@ -106,4 +117,7 @@ with tf.Session() as sess:
                 print("Model is saved.\n")
 
         if step > 50000:
+            end = time.clock()
+            print("%f CPU seconds"%(end-start))
             sys.exit()
+
