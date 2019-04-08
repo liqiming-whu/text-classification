@@ -1,4 +1,8 @@
-# 基于attentionCNN的文本分类
+# 基于attention的CNN文本分类
+
+att_cnn1 输入层attention
+att_cnn2 卷积层attention
+att_cnn3 双层attention
 
 ## 训练
 
