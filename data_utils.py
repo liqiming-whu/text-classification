@@ -73,6 +73,23 @@ def build_word_dataset(step, word_dict, document_max_len):
 
     return x, y
 
+
+def build_svm_dataset(step, word_dict):
+    if step == "train":
+        df = pd.read_csv(TRAIN_PATH, names=["class", "title", "content"])
+    else:
+        df = pd.read_csv(TEST_PATH, names=["class", "title", "content"])
+
+    df = df.sample(frac=1)
+    x = list(map(lambda d: word_tokenize(clean_str(d)), df["content"]))
+    x = list(map(lambda d: list(map(lambda w: word_dict.get(w, word_dict["<unk>"]), d)), x))
+    x = list(map(lambda d: d + [word_dict["<eos>"]], x))
+
+    y = list(map(lambda d: d - 1, list(df["class"])))
+
+    return x, y
+
+
 def batch_iter(inputs, outputs, batch_size, num_epochs):
     inputs = np.array(inputs)
     outputs = np.array(outputs)
